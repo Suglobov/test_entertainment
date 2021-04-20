@@ -29,19 +29,21 @@ const checkValueType = (value, Type) => {
 };
 
 
-const createSetterTypedValue = (object, fieldName, type) => {
+const createTypedField = ({ object, fieldName, type, initValue }) => {
     if (type === undefined || type === null) {
         console.warn(new Error('type is not defined'));
     }
-    // Object.defineProperty(this, 'type', {
-    //         enumerable: true,
-    //         get: () => type,
-    // })
-    checkParams(object, Object);
-    // const currentInitValue = initValue === undefined ? getTypeDefault(this.type) : initValue;
-    // let value = checkValueType(currentInitValue, this.type) ? currentInitValue : getTypeDefault(this.type);
+    Object.defineProperty(object, `${fieldName}Type`, {
+        enumerable: true,
+        get: () => type,
+    });
 
     let value;
+    if (checkParams(initValue, type)) {
+        value = initValue;
+    } else {
+        value = getTypeDefault(type);
+    }
 
     Object.defineProperty(object, fieldName, {
         enumerable: true,
@@ -154,15 +156,16 @@ const checkParams = (params, rules) => {
 
         const validatorType = getType(rule.validator);
 
-        // TODO плохое условие. Надо поправить, чтоб не было ошибок на validator === undefined
-        if (checkValueType(validatorType, Function)) {
-            const isValuePassed = Boolean(rule.validator(value));
-            if (isValuePassed === false) {
-                console.warn(new Error(`value (${value}) did not pass validation`));
+        if (rule.validator !== undefined) {
+            if (checkValueType(validatorType, Function)) {
+                const isValuePassed = Boolean(rule.validator(value));
+                if (isValuePassed === false) {
+                    console.warn(new Error(`value (${value}) did not pass validation`));
+                    isPassed = false;
+                }
+            } else {
                 isPassed = false;
             }
-        } else if (checkValueType(validatorType, undefined) === false) {
-            isPassed = false;
         }
     });
 
@@ -172,6 +175,8 @@ const checkParams = (params, rules) => {
 
 const SafePredictableClassCreator = class {
     constructor (options = {}) {
+        // checkValueType(this, Object);
+        console.log(this, getType(this) instanceof Object);
         const { propsLocal, propsPub, params, methodsPub } = options;
 
         const provenMethodsPub = Object.fromEntries(
