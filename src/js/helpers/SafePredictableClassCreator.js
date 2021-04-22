@@ -2,11 +2,20 @@ import deepFreeze from './deepFreeze.js';
 import getType from './getType.js';
 
 
-const getTypeDefault = (Type) => {
+const checkValueType = (value, Type) => {
+    const valueType = getType(value);
+    if (valueType === Type) {
+        return true;
+    }
+    console.warn(new Error(`Error type: (${value}) is type '${valueType && valueType.name}', need type '${Type && Type.name}'`));
+    return false;
+};
+
+const getTypeDefaultValue = (Type) => {
     if (Type === undefined || Type === null) {
         return Type;
     }
-    if (Type instanceof Function) {
+    if (checkValueType(Type, Function) && checkValueType(Type.prototype, Object)) {
         try {
             return new Type();
         } catch (error) {
@@ -16,73 +25,75 @@ const getTypeDefault = (Type) => {
         }
     }
 
-    console.warn(`type: ${Type} not correct`);
+    console.warn(`type: ${Type && Type.name} not correct`);
 };
 
-const checkValueType = (value, Type) => {
-    const valueType = getType(value);
-    if (valueType === Type) {
-        return true;
-    }
-    console.warn(new Error(`Error value type: (${value}) is type '${valueType && valueType.name}', need type '${Type && Type.name}'.`));
-    return false;
-};
 
+// const Test = class {
+//     constructor () {
+//         this.z = 1;
+//     }
+// };
+// console.log(getType(Test.prototype));
 
 const createTypedField = ({ object, fieldName, type, initValue }) => {
     if (type === undefined || type === null) {
         console.warn(new Error('type is not defined'));
     }
-    Object.defineProperty(object, `${fieldName}Type`, {
-        enumerable: true,
-        get: () => type,
-    });
-
-    let value;
-    if (checkParams(initValue, type)) {
-        value = initValue;
-    } else {
-        value = getTypeDefault(type);
-    }
-
-    Object.defineProperty(object, fieldName, {
-        enumerable: true,
-        get: () => value,
-        set (newValue) {
-            if (checkValueType(newValue, type)) {
-                value = newValue;
-            }
-        },
-    });
-};
-
-
-const TypedValue = class {
-    constructor ({ type, initValue } = {}) {
-        if (type === undefined || type === null) {
-            console.warn(new Error('type is not defined'));
-        }
-        Object.defineProperty(this, 'type', {
+    try {
+        Object.defineProperty(object, `${fieldName}Type`, {
             enumerable: true,
             get: () => type,
         });
 
-        const currentInitValue = initValue === undefined ? getTypeDefault(this.type) : initValue;
-        let value = checkValueType(currentInitValue, this.type) ? currentInitValue : getTypeDefault(this.type);
+        let value;
+        if (checkParams(initValue, type)) {
+            value = initValue;
+        } else {
+            value = getTypeDefaultValue(type);
+        }
 
-        Object.defineProperty(this, 'value', {
+        Object.defineProperty(object, fieldName, {
             enumerable: true,
             get: () => value,
             set (newValue) {
-                if (checkValueType(newValue, this.type)) {
+                if (checkValueType(newValue, type)) {
                     value = newValue;
                 }
             },
         });
-
-        deepFreeze(this);
+    } catch (error) {
+        console.error(error);
     }
 };
+
+
+// const TypedValue = class {
+//     constructor ({ type, initValue } = {}) {
+//         if (type === undefined || type === null) {
+//             console.warn(new Error('type is not defined'));
+//         }
+//         Object.defineProperty(this, 'type', {
+//             enumerable: true,
+//             get: () => type,
+//         });
+
+//         const currentInitValue = initValue === undefined ? getTypeDefaultValue(this.type) : initValue;
+//         let value = checkValueType(currentInitValue, this.type) ? currentInitValue : getTypeDefaultValue(this.type);
+
+//         Object.defineProperty(this, 'value', {
+//             enumerable: true,
+//             get: () => value,
+//             set (newValue) {
+//                 if (checkValueType(newValue, this.type)) {
+//                     value = newValue;
+//                 }
+//             },
+//         });
+
+//         deepFreeze(this);
+//     }
+// };
 
 const getObjectFlatKeys = (incomeObject) => {
     const typesForIterCall = [Object, Function];
