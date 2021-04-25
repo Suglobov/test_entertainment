@@ -1,32 +1,7 @@
 import deepFreeze from './deepFreeze.js';
 import getType from './getType.js';
-
-
-const checkValueType = (value, Type) => {
-    const valueType = getType(value);
-    if (valueType === Type) {
-        return true;
-    }
-    console.warn(new Error(`Error type: (${value}) is type '${valueType && valueType.name}', need type '${Type && Type.name}'`));
-    return false;
-};
-
-const getTypeDefaultValue = (Type) => {
-    if (Type === undefined || Type === null) {
-        return Type;
-    }
-    if (checkValueType(Type, Function) && checkValueType(Type.prototype, Object)) {
-        try {
-            return new Type();
-        } catch (error) {
-            try {
-                return Type();
-            } catch (error) { }
-        }
-    }
-
-    console.warn(`type: ${Type && Type.name} not correct`);
-};
+import checkValueType from './checkValueType.js';
+import getTypeDefaultValue from './getTypeDefaultValue.js';
 
 
 // const Test = class {
@@ -41,10 +16,10 @@ const createTypedField = ({ object, fieldName, type, initValue }) => {
         console.warn(new Error('type is not defined'));
     }
     try {
-        Object.defineProperty(object, `${fieldName}Type`, {
-            enumerable: true,
-            get: () => type,
-        });
+        // Object.defineProperty(object, `${fieldName}Type`, {
+        //     enumerable: true,
+        //     get: () => type,
+        // });
 
         let value;
         if (checkParams(initValue, type)) {
